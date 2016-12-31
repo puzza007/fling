@@ -2,7 +2,7 @@
 {application, fling,
  [
   {description, "Library that abuses module constant pool"},
-  {vsn, "1.0"},
+  {vsn, "1.0.0"},
   {modules, []},
   {applications, [
                   kernel,
@@ -13,7 +13,7 @@
   {registered, []},
 
 
-  {contributors,["Mark Allen"]},
+  {maintainers,["Mark Allen"]},
   {licenses,["Apache"]},
   {links,[{"Github","https://github.com/basho-labs/fling"}]}
  ]}.
