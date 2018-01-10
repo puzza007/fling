@@ -2,7 +2,7 @@
              [{description,"Library that abuses module constant pool"},
               {vsn,"1.0.1"},
               {modules,[]},
-              {applications,[kernel,stdlib,lager]},
+              {applications,[kernel,stdlib]},
               {mod,{fling_app,[]}},
               {registered,[]},
               {maintainers,["Mark Allen"]},

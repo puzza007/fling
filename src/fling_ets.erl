@@ -107,7 +107,7 @@ init([GetKey, GetValue, ModName]) ->
 
 %% @private
 handle_call(Req, _From, State = #state{ tid = undefined }) ->
-   lager:warning("Got call ~p but ETS table has not been given away yet.",
+   error_logger:warning_msg("Got call ~p but ETS table has not been given away yet.",
 		 [Req]),
    {noreply, State};
 
@@ -138,12 +138,12 @@ handle_call({put, Obj}, _From, State = #state{ modname = M, mode = mg, tid = Tid
    {reply, ets:insert(Tid, Obj), State#state{ ticks = 0, mode = ets }};
 
 handle_call(Req, _From, State) ->
-   lager:error("Unknown call ~p.", [Req]),
+   error_logger:error_msg("Unknown call ~p.", [Req]),
    {reply, whoa, State}.
 
 %% @private
 handle_cast(Req, State = #state{ tid = undefined }) ->
-   lager:warning("Got cast ~p but ETS table has not been given away yet.",
+   error_logger:warning_msg("Got cast ~p but ETS table has not been given away yet.",
 		 [Req]),
    {noreply, State};
 handle_cast({promote}, State = #state{ pip = true }) ->
@@ -176,18 +176,17 @@ handle_cast({put, Obj}, State = #state{ mode = mg, modname = M, tid = Tid }) ->
    ets:insert(Tid, Obj),
    {noreply, State#state{ mode = ets, ticks = 0 }};
 handle_cast(Req, State) ->
-   lager:warning("Unknown cast ~p", [Req]),
+   error_logger:warning_msg("Unknown cast ~p", [Req]),
    {noreply, State}.
 
 %% @private
-handle_info({'ETS-TRANSFER', Tid, From, Options}, State = #state{ secs_per_tick = S, 
+handle_info({'ETS-TRANSFER', Tid, _From, _Options}, State = #state{ secs_per_tick = S,
 								  tid = undefined }) ->
-   lager:debug("Got ETS table ~p from ~p with options ~p", [Tid, From, Options]),
    Tref = schedule_tick(S),
    {noreply, State#state{ tid = Tid, tref = Tref }};
 handle_info({'ETS-TRANSFER', Tid, From, _Options}, State = #state{ tid = Current }) ->
    %% This clause should never be executed but...
-   lager:error("ETS transfer request from ~p for ETS table ~p but I already have ETS table ~p!",
+   error_logger:error_msg("ETS transfer request from ~p for ETS table ~p but I already have ETS table ~p!",
 	       [From, Tid, Current]),
    {noreply, State};
 
@@ -204,22 +203,18 @@ handle_info(?TICK, State = #state{ mode = ets, ticks = M, max_ticks = M,
    promote(Tid, Mod, GK, GV),
    {noreply, State#state{ pip = true, tref = undefined }};
 handle_info(?TICK, State = #state{ mode = mg }) ->
-   lager:debug("Got a tick while in mochiglobal mode.", []),
    {noreply, State#state{ tref = undefined }};
 handle_info(?TICK, State = #state{ pip = true }) ->
-   lager:debug("Got a tick while promotion in progress.", []),
    {noreply, State#state{ tref = undefined }};
-handle_info({'DOWN', _Mref, process, Pid, normal}, State = #state{ modname = ModName }) ->
-   lager:debug("Promotion of module ~p completed when ~p exited normally.", 
-	       [ModName, Pid]),
+handle_info({'DOWN', _Mref, process, _Pid, normal}, State = #state{ modname = _ModName }) ->
    {noreply, State#state{ pip = false, mode = mg }};
 handle_info({'DOWN', _Mref, process, Pid, Error}, State = #state{ modname = ModName }) ->
-   lager:error("Promotion of module ~p failed because ~p in ~p.", 
+   error_logger:error_msg("Promotion of module ~p failed because ~p in ~p.", 
 	       [ModName, Error, Pid]),
    {noreply, State#state{ pip = false }};
 
 handle_info(Info, State) ->
-   lager:warning("Unknown info ~p", [Info]),
+   error_logger:warning_msg("Unknown info ~p", [Info]),
    {noreply, State}.
 
 %% @private
@@ -243,7 +238,7 @@ get_env(Setting, Default) ->
 
 promote(Tid, ModName, GetKey, GetValue) ->
    {Pid, _Mref} = spawn_monitor(fun() -> create_mochiglobal(Tid, ModName, GetKey, GetValue) end),
-   lager:notice("Promoting ETS table ~p to mochiglobal module ~p in pid ~p",
+   error_logger:info_msg("Promoting ETS table ~p to mochiglobal module ~p in pid ~p",
 		[Tid, ModName, Pid]),
    ok.
 
